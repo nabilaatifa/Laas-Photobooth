@@ -97,6 +97,17 @@ export function SavePage() {
     canvas.width = W;
     canvas.height = H;
 
+    // ✅ [FIX] tunggu font Poppins siap sebelum canvas nulis text
+    const dateSize = Math.round(W * 0.04);
+    const capSize = Math.round(W * 0.038);
+    try {
+      await document.fonts.load(`600 ${dateSize}px "Poppins"`);
+      await document.fonts.load(`600 ${capSize}px "Poppins"`);
+      await document.fonts.ready;
+    } catch {
+      // kalau browser ga support fonts API, lanjut aja (fallback)
+    }
+
     // background = frame color (single)
     ctx.fillStyle = frameColors[frameColor] || "#B8A0D9";
     ctx.fillRect(0, 0, W, H);
@@ -155,11 +166,12 @@ export function SavePage() {
     const sub = textColor === "white" ? "rgba(255,255,255,0.85)" : "rgba(17,24,39,0.78)";
 
     ctx.fillStyle = fill;
-    ctx.font = `${Math.round(W * 0.04)}px "Poppins", cursive`;
+    // ✅ [FIX] ganti fallback cursive -> sans-serif biar ga loncat font
+    ctx.font = `600 ${Math.round(W * 0.04)}px "Poppins", sans-serif`;
     ctx.fillText(dateLabel, W / 2, footerY + Math.round(footerH * 0.4));
 
     ctx.fillStyle = sub;
-    ctx.font = `${Math.round(W * 0.038)}px "Poppins", cursive`;
+    ctx.font = `600 ${Math.round(W * 0.038)}px "Poppins", sans-serif`;
     const cap = caption.trim() || "photobooth";
     const maxW = W - pad * 2 - Math.round(W * 0.6);
     const lines = wrapText(ctx, cap, maxW, 2);
@@ -168,7 +180,10 @@ export function SavePage() {
     lines.forEach((t, i) => ctx.fillText(t, W / 2, startY + i * lineH));
   };
 
-  const handleDownload = () => {
+  // ✅ [FIX] regenerate canvas dulu sebelum export
+  const handleDownload = async () => {
+    await generateOutput();
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
